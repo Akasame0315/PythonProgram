@@ -1,7 +1,4 @@
-import socket
-import pyautogui
-import time
-from threading import Timer
+
 from cProfile import run
 from json import load
 from turtle import left
@@ -9,8 +6,12 @@ import pygame
 import random
 import os
 import json
+import pyautogui
+import socket
+import threading
+import time
+from threading import Timer
 
-#遊戲參數
 FPS = 60    #一秒內遊戲更新的次數
 WIDTH = 500
 HEIGHT = 700
@@ -19,20 +20,19 @@ BLACK = (0, 0, 0)
 RED = (255, 0, 0)
 mx = 0
 
-#連線參數
 HEADER = 64
 PORT = 888
-FORMAT = 'utf-8'
-DISCONNECT_MESSAGE = "!DISCONNECT"
 # SERVER = ""
 SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
+FORMAT = 'utf-8'
+DISCONNECT_MESSAGE = "!DISCONNECT"
 
 clock = pygame.time.Clock() #管理遊戲的時間
 #初始化&創建視窗
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))   #設定視窗大小
-pygame.display.set_caption("ClientWindow")   #視窗名稱
+pygame.display.set_caption("JetGame")   #視窗名稱
 
 #載入背景圖片
 background_img = pygame.image.load(os.path.join("image", "background.png")).convert()    #convert轉換成pygame容易讀取的格式
@@ -56,10 +56,6 @@ def write_text(surf, text, size, x, y):
     text_rect.centerx = x
     text_rect.top = y
     surf.blit(text_surface, text_rect)  #畫出文字
-
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect(ADDR)
-print(client.recv(1024).decode(FORMAT))
 
 #玩家
 class Player(pygame.sprite.Sprite):
@@ -92,50 +88,63 @@ class Player(pygame.sprite.Sprite):
         self.image.set_colorkey(BLACK)    #圖片去背
         self.rect = self.image.get_rect()       #圖片定位(外框)
         # return 0
+    
+ #sprite群組 可以放進sprite的物件
+all_sprites = pygame.sprite.Group()
+player = Player()
+player_group = pygame.sprite.Group()
+player_group.add(player)
+all_sprites.add(player) #把物件放進group裡
 
-def send(msg):
-    message = msg.encode(FORMAT)
-    msg_length = len(message)
-    send_length = str(msg_length).encode(FORMAT)
-    send_length += b' ' * (HEADER - len(send_length))
-    client.send(send_length)
-    client.send(message)
-    print(client.recv(1024).decode(FORMAT))
+def start():
+    server.listen()
+    print(f"[LISTENING] Server is listening on {PORT}")
+    while True:   
+        conn, addr = server.accept()     
+        
+        thread = threading.Thread(target=handle_client, args=(conn, addr))
+        thread.start()
+        print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
 
+        #遊戲迴圈
+        running = True
 
-run = True
-originTime = time.time()
-while run:
-    mx, my = pyautogui.position()
-    localTime = time.time()
-    runTime = localTime-originTime
-    # print("(x:",mx, ",y:", my, "),runTime:", round(runTime,3))
-    # send(f"(x:{mx}, y:{my}), runTime: {round(runTime,3)}")
-    send(f"{mx},{my}")
-    # time.sleep(0.5) #隔0.1秒再傳
-    all_sprites = pygame.sprite.Group()
-    player = Player()
-    player_group = pygame.sprite.Group()
-    player_group.add(player)
-    all_sprites.add(player) #把物件放進group裡
+        while running:
+            clock.tick(FPS)  #一秒內最多的執行次數
 
-    #更新遊戲
-    all_sprites.update()    #groups裡所有物件update
-    Player.animate(player, mx, my)  #角色移動動畫
-    x0, y0 = 0, 0   #背景1初始位置
-    x1, y1 = 0, -700    #背景2初始位置
-    #背景移動
-    y1 += 5 
-    y0 += 5 
-    screen.blit(pygame.transform.scale(background_img, (500, 700)), (x0, y0))
-    screen.blit(pygame.transform.scale(background_img, (500, 700)), (x1, y1))
-    if y0 > 700:    y0 = -700   #圖片到底就重新放回上方
-    if y1 > 700:    y1 = -700
+            #取得輸入
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:   #關閉視窗
+                    running = False
 
-    all_sprites.draw(screen)    #把sprites的東西都畫到screen上
-    pygame.display.flip()
-    pygame.display.update()
-    # if(localTime-originTime>=5):
-    #     print(DISCONNECT_MESSAGE)
-    #     send(DISCONNECT_MESSAGE)
-    #     break
+            mx, my = pyautogui.position()
+
+            #更新遊戲
+            all_sprites.update()    #groups裡所有物件update
+            Player.animate(player, mx, my)  #角色移動動畫
+
+            #背景移動
+            y1 += 5 
+            y0 += 5 
+            screen.blit(pygame.transform.scale(background_img, (500, 700)), (x0, y0))
+            screen.blit(pygame.transform.scale(background_img, (500, 700)), (x1, y1))
+            if y0 > 700:    y0 = -700   #圖片到底就重新放回上方
+            if y1 > 700:    y1 = -700
+
+            all_sprites.draw(screen)    #把sprites的東西都畫到screen上
+            write_text(screen, "score: " + str(mx), 22, 70, 30)
+            write_text(screen, "x: " + str(mx), 90, 70, 30)
+
+            pygame.display.flip()
+            pygame.display.update()
+            
+
+            # start()
+
+        pygame.quit()
+        
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
+print("ADDR:", ADDR)
+print("[STARTING] server is starting...")
+start()

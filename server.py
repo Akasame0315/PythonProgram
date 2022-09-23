@@ -5,23 +5,23 @@ import time
 from threading import Timer
 
 HEADER = 64
-PORT = 7414
-SERVER = ""
-# SERVER = socket.gethostbyname(socket.gethostname())
+PORT = 888
+# SERVER = ""
+SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 
-try:
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(ADDR)
-    print("ADDR:", ADDR)
+# try:
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind(ADDR)
+print("ADDR:", ADDR)
 
-except socket.error as e:
-    print(e)
-    print('等待5秒之後繼續重試...')
-    server.send(f"等待5秒之後繼續重試...".encode(FORMAT))
-    time.sleep(5)
+# except socket.error as e:
+#     print(e)
+#     print('等待5秒之後繼續重試...')
+#     server.send(f"等待5秒之後繼續重試...".encode(FORMAT))
+#     time.sleep(5)
 
 def handle_client(conn, addr):
     print(f"-----[NEW CONNECTION] {addr} connected.-----")
@@ -57,9 +57,3 @@ def start():
 
 print("[STARTING] server is starting...")
 start()
-
-# run = True
-
-# while run:
-#     mx,my = pyautogui.position()
-#     print("x: ", mx,"my: ", my)
