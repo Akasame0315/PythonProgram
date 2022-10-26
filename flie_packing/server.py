@@ -1,4 +1,3 @@
-
 # region import
 from ast import Global
 from cProfile import run
@@ -14,6 +13,7 @@ from threading import Timer
 from ServerPlayers import Player
 from ServerPlayers import Enemy
 from PrintOnScreen import write_text
+import GlobalPosition
 # endregion
 
 # region 參數
@@ -34,6 +34,7 @@ SERVER = socket.gethostbyname(socket.gethostname())
 ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
+GlobalPosition.initial()
 #endregion
 
 clock = pygame.time.Clock() #管理遊戲的時間
@@ -53,7 +54,7 @@ x1, y1 = 0, -700    #背景2初始位置
 
 # region sprite群組 可以放進sprite的物件
 all_sprites = pygame.sprite.Group()
-player = Player(250, 650)
+player = Player(GlobalPosition.ServerX, 650)
 enemy = Enemy(int(cx), int(cy))
 all_sprites.add(player) #把物件放進group裡
 all_sprites.add(enemy) #把物件放進group裡
@@ -73,21 +74,18 @@ def handle_client(conn, addr):
         if msg_length:
             msg_length = int(msg_length)
             msg = conn.recv(msg_length).decode(FORMAT)
-            if msg != DISCONNECT_MESSAGE:
-                print(f"client msg: {msg}")
-                print("type", type(msg))
-                newMsg = msg.split(',')
-                print("Clientpos:" , newMsg)
-                print("type", type(newMsg))
 
-                conn.send(f"{planex} , {planey}".encode(FORMAT))
-                cx = newMsg[0]
-                cy = newMsg[1]
-                
-            else:
-                print(f"{msg} {addr} Stop \n")
-                conn.send(f"StopMsg received.".encode(FORMAT))
-                connected = False
+            print(f"client msg: {msg}")
+            print("type", type(msg))
+            newMsg = msg.split(',')
+            print("Clientpos:" , newMsg)
+            print("type", type(newMsg))
+
+            conn.send(f"{planex} , {planey}".encode(FORMAT))
+
+            cx = newMsg[0]
+            cy = newMsg[1]
+
         sleep(0.01) #0.01傳送一次
     
     conn.close()
@@ -116,16 +114,18 @@ def start():
 
         pos = pygame.mouse.get_pos()
         #更新遊戲
-        # Player.animate(player)  #角色移動動畫
-        if(pos[0] != 0 or pos[1] != 0):  player.update(pos[0], pos[1])
+        if(pos[0] != 0 or pos[1] != 0):
+            player.update(pos[0], pos[1])
+            player.animate(pos[0], pos[1])
         enemy.update(int(cx), int(cy))
-        
+        enemy.animate(int(cx), int(cy))
+
         planex = player.rect.centerx
         planey = player.rect.centery
 
         #背景移動
-        y1 += 5 
-        y0 += 5 
+        y1 += 5
+        y0 += 5
         screen.blit(pygame.transform.scale(background_img, (500, 700)), (x0, y0))
         screen.blit(pygame.transform.scale(background_img, (500, 700)), (x1, y1))
         if y0 > 700:    y0 = -700   #圖片到底就重新放回上方
@@ -136,6 +136,8 @@ def start():
         write_text(screen, "my: " + str(planey), 22, 70, 50)
         write_text(screen,"ClientPosx:" + str(cx), 22, 100, 70)
         write_text(screen,"ClientPosy:" + str(cy), 22, 100, 90)
+        write_text(screen,"GlobalSX:" + str(GlobalPosition.ServerX), 22, 100, 110)
+        write_text(screen,"GlobalCX:" + str(GlobalPosition.ServerEnemy), 22, 100, 130)
         
         pygame.display.flip()
         pygame.display.update()
