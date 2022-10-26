@@ -118,6 +118,7 @@ def gmaeRun():
         write_text(screen, "serverPosx: " + str(sx) , 22, 100, 70)
         write_text(screen, "serverPosy: " + str(sy) , 22, 100, 90)
         write_text(screen,"GlobalSX:" + str(GlobalPosition.ClientEnemy), 22, 100, 110)
+        write_text(screen,"GlobalCX:" + str(GlobalPosition.ClientX), 22, 100, 130)
         
         pygame.display.flip()
         pygame.display.update()
