@@ -23,7 +23,7 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(GlobalValue.client01_img, (GlobalValue.planesize_large)) #調整圖片大小
         self.image.set_colorkey(GlobalValue.WHITE)    #圖片去背
         self.rect = self.image.get_rect()       #圖片定位(外框)
-        self.rect.centerx = originx
+        self.rect.centerx = x
         self.rect.centery = y
         # 防止飛船超出視窗
         if self.rect.centerx < 0:
@@ -35,28 +35,38 @@ class Player(pygame.sprite.Sprite):
         if self.rect.centery >= GlobalValue.HEIGHT:
             self.rect.centery = GlobalValue.HEIGHT
 
-    def animate(self, x, y):
-        global originx
-        if(x > originx):
+    def animate(self, move):
+        if move > 0:
             self.image = pygame.transform.scale(GlobalValue.client01L_img, (GlobalValue.planesize_large)) #調整圖片大小
             self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
-            self.rect = self.image.get_rect()       #圖片定位(外框)
-            self.rect.centerx = x
-            self.rect.centery = y
-            originx = x
-        elif(x < originx):
+
+        elif move < 0:
             self.image = pygame.transform.scale(GlobalValue.client01R_img, (GlobalValue.planesize_large)) #調整圖片大小
             self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
-            self.rect = self.image.get_rect()       #圖片定位(外框)
-            self.rect.centerx = x
-            self.rect.centery = y
-            originx = x  
-        GlobalValue.ClientX = originx
+        
+        self.rect = self.image.get_rect()       #圖片定位(外框)
+        self.rect.center = pygame.mouse.get_pos()
+        # global originx
+        # if(x > originx):
+        #     self.image = pygame.transform.scale(GlobalValue.client01L_img, (GlobalValue.planesize_large)) #調整圖片大小
+        #     self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
+        #     self.rect = self.image.get_rect()       #圖片定位(外框)
+        #     self.rect.centerx = x
+        #     self.rect.centery = y
+        #     originx = x
+        # elif(x < originx):
+        #     self.image = pygame.transform.scale(GlobalValue.client01R_img, (GlobalValue.planesize_large)) #調整圖片大小
+        #     self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
+        #     self.rect = self.image.get_rect()       #圖片定位(外框)
+        #     self.rect.centerx = x
+        #     self.rect.centery = y
+        #     originx = x  
+        # GlobalValue.ClientX = originx
             
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
         pygame.sprite.Sprite.__init__(self)
-        self.image = pygame.transform.scale(GlobalValue.client02_img, (GlobalValue.planesize_middle))
+        self.image = pygame.transform.scale(GlobalValue.client02_img, (GlobalValue.planesize_large))
         self.image.set_colorkey(GlobalValue.BLACK)
         self.rect = self.image.get_rect()
         self.radius = 10
@@ -65,7 +75,7 @@ class Enemy(pygame.sprite.Sprite):
         self.speed = 8
 
     def update(self, x,  y):
-        self.image = pygame.transform.scale(GlobalValue.client02_img, (GlobalValue.planesize_middle))
+        self.image = pygame.transform.scale(GlobalValue.client02_img, (GlobalValue.planesize_large))
         self.image.set_colorkey(GlobalValue.BLACK)
         self.rect = self.image.get_rect()
         self.rect.centerx = x
@@ -83,14 +93,14 @@ class Enemy(pygame.sprite.Sprite):
     def animate(self, x, y):
         global enemyx
         if(x > enemyx):
-            self.image = pygame.transform.scale(GlobalValue.client02R_img, (GlobalValue.planesize_middle)) #調整圖片大小
+            self.image = pygame.transform.scale(GlobalValue.client02R_img, (GlobalValue.planesize_large)) #調整圖片大小
             self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
             self.rect = self.image.get_rect()       #圖片定位(外框)
             self.rect.centerx = x
             self.rect.centery = y
             enemyx = x
         elif(x < enemyx):
-            self.image = pygame.transform.scale(GlobalValue.client02L_img, (GlobalValue.planesize_middle)) #調整圖片大小
+            self.image = pygame.transform.scale(GlobalValue.client02L_img, (GlobalValue.planesize_large)) #調整圖片大小
             self.image.set_colorkey(GlobalValue.BLACK)    #圖片去背
             self.rect = self.image.get_rect()       #圖片定位(外框)
             self.rect.centerx = x

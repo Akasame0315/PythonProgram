@@ -3,6 +3,7 @@ from ast import Global
 from cProfile import run
 from ctypes import memset, sizeof
 from json import load
+from pickle import FALSE, TRUE
 from time import sleep, time
 from turtle import left, pos
 import pygame
@@ -16,6 +17,7 @@ import GlobalValue
 # endregion
 
 GlobalValue.initial()
+# region 參數
 cx = 0
 cy = 0
 # 連線參數
@@ -26,6 +28,8 @@ ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 DISCONNECT_MESSAGE = "!DISCONNECT"
 GlobalValue.serverIP = SERVER
+shoot = "FALSE"
+clientShoot = "FALSE"
 #endregion
 
 clock = pygame.time.Clock() #管理遊戲的時間
@@ -44,7 +48,7 @@ x1, y1 = 1600, 0    #背景2初始位置
 
 # region sprite群組 可以放進sprite的物件
 all_sprites = pygame.sprite.Group()
-player = Player(GlobalValue.ServerX, 650)
+player = Player(GlobalValue.WIDTH/2, 850)
 enemy = Enemy(int(cx), int(cy))
 all_sprites.add(player) #把物件放進group裡
 all_sprites.add(enemy) #把物件放進group裡
@@ -52,7 +56,7 @@ all_sprites.add(enemy) #把物件放進group裡
 
 #server傳送
 def handle_client(conn, addr):
-    global cx, cy
+    global cx, cy, shoot, clientShoot
     print(f"-----[NEW CONNECTION] {addr} connected.-----")
     conn.send(f"-----{addr}Connect success-----".encode(FORMAT))
 
@@ -64,17 +68,19 @@ def handle_client(conn, addr):
         if msg_length:
             msg_length = int(msg_length)
             msg = conn.recv(msg_length).decode(FORMAT)
+            if msg == DISCONNECT_MESSAGE:
+                connected = False
+                print("client unconnect.")
 
-            # print(f"client msg: {msg}")
-            # print("type", type(msg))
-            newMsg = msg.split(',')
-            print("Clientpos:" , newMsg)
-            print("type", type(newMsg))
+            else:
+                newMsg = msg.split(',')
+                print("Clientpos:" , newMsg)
+                print("type", type(newMsg))
 
-            conn.send(f"{planex} , {planey}".encode(FORMAT))
-
+            conn.send(f"{planex} , {planey}, {shoot}".encode(FORMAT))
             cx = newMsg[0]
             cy = newMsg[1]
+            clientShoot = newMsg[2]
 
         sleep(0.01) #0.01傳送一次
     
@@ -83,14 +89,22 @@ def handle_client(conn, addr):
 def start():
     global cx, cy #clientPos
     global x0, y0, x1, y1 #背景初始位置
+    global shoot #射擊判定
     
     server.listen()
     print(f"[LISTENING] Server is listening on {PORT}")
-    conn, addr = server.accept()     
     
+    #等待連線畫面
+    screen.blit(pygame.transform.scale(GlobalValue.loading_img, (GlobalValue.WIDTH, GlobalValue.HEIGHT)), (x0, y0))
+    write_text(screen,"WAITTING FOR CONNECT...", 100, 70, 600, GlobalValue.YELLOW, TRUE)
+    write_text(screen,"YOUR ROOM ADDRESS IS: " + f"[{GlobalValue.serverIP}]", 70, 70, GlobalValue.HEIGHT-150, GlobalValue.RED, TRUE)
+    pygame.display.flip()
+    pygame.display.update()
+    
+    conn, addr = server.accept()
     thread = threading.Thread(target=handle_client, args=(conn, addr))
     thread.start()
-    print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
+    # print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
 
     #遊戲迴圈
     running = True
@@ -101,38 +115,43 @@ def start():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:   #關閉視窗
                 running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    shoot = 'TRUE'
+                
 
         pos = pygame.mouse.get_pos()
+        print(pos[0], pos[1])
         #更新遊戲
         if(pos[0] != 0 or pos[1] != 0):
             player.update(pos[0], pos[1])
-            player.animate(pos[0], pos[1])
+            player.animate(pygame.mouse.get_rel()[0])
+
         enemy.update(int(cx), int(cy))
         enemy.animate(int(cx), int(cy))
-
         planex = player.rect.centerx
         planey = player.rect.centery
 
         #背景移動
-        x0 -= 1
-        x1 -= 1
+        x0 -= 0.7
+        x1 -= 0.7
         screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x0, y0))
         screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x1, y1))
-        
         if x0 < -1600:    x0 = 1600
         if x1 < -1600:    x1 = 1600
 
         all_sprites.draw(screen)    #把sprites的東西都畫到screen上
-        write_text(screen, "mx: " + str(planex), 22, 50, 20)
-        write_text(screen, "my: " + str(planey), 22, 50, 40)
-        write_text(screen,"ClientPosx:" + str(cx), 22, 50, 60)
-        write_text(screen,"ClientPosy:" + str(cy), 22, 50, 80)
-        write_text(screen,"GlobalSX:" + str(GlobalValue.ServerX), 22, 50, 100)
-        write_text(screen,"GlobalCX:" + str(GlobalValue.ServerEnemy), 22, 50, 120)
-        write_text(screen,"serverIP:" + str(GlobalValue.serverIP), 22, 50, 140)
+        write_text(screen, "mx: " + str(planex) + " my: " + str(planey), 22, 50, 20)
+        write_text(screen,"ClientPosx:" + str(cx) + " ClientPosy:" + str(cy), 22, 50, 40)
+        write_text(screen,"GlobalSX:" + str(GlobalValue.ServerX), 22, 50, 60)
+        write_text(screen,"GlobalCX:" + str(GlobalValue.ServerEnemy), 22, 50, 80)
+        write_text(screen,"serverIP:" + str(GlobalValue.serverIP), 22, 50, 100)
+        write_text(screen,"key:" + str(shoot), 22, 50, 120)
+        write_text(screen,"clientKey:" + str(clientShoot), 22, 50, 140)
         
         pygame.display.flip()
         pygame.display.update()
+        shoot = 'FALSE'
         
     pygame.quit()
         
