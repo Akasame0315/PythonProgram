@@ -4,7 +4,7 @@ import pygame
 class Bullet(pygame.sprite.Sprite):
     def __init__(self, x, y, speed):
         pygame.sprite.Sprite.__init__(self)     #呼叫初始函式
-        self.image = pygame.transform.scale(Globals.bullet_img, (30, 30)) #調整圖片大小
+        self.image = pygame.transform.scale(Globals.bullet2_img, (30, 30)) #調整圖片大小
         self.image.set_colorkey(Globals.BLACK)    #圖片去背
         self.rect = self.image.get_rect()       #圖片定位(外框)
         self.rect.centerx = x
