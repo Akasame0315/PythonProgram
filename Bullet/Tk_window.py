@@ -29,6 +29,7 @@ def insert_end():   # 在文字框內容最後接著插入輸入內容
     # serverIP = entry_IP.get()
     global serverIP
     global text_IP
+    global entry_IP
     entry = entry_IP.get()
     print("IP: ", entry)
     text_IP = Label(text=entry, font=2, bg='#fff')
@@ -37,12 +38,15 @@ def insert_end():   # 在文字框內容最後接著插入輸入內容
 def IP_Reset():   # 清除輸入&確認欄位
     global serverIP
     global text_IP
+    global entry_IP
     serverIP = Globals.serverIP
     entry_IP.delete(0, END)
     text_IP = Label(text='', font=2, bg='#fff')
     text_IP.grid(row=2,column=1, sticky="WE") 
 
 def TK_connect():
+    global text_IP
+    global entry_IP
     print("IP: ", serverIP)
     #輸入欄位
     label_IP=Label(text='Entry your IP: ', font=2, height=2) 
