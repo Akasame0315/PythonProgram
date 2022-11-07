@@ -15,6 +15,7 @@ from ServerPlayers import Enemy
 from PrintOnScreen import write_text
 import Globals
 import bullet
+import Explosion
 # endregion
 
 Globals.initial()
@@ -70,7 +71,7 @@ def handle_client(conn, addr):
 
             else:
                 newMsg = msg.split(',')
-                print("Clientpos:" , newMsg)
+                # print("Clientpos:" , newMsg)
                 # print("type", type(newMsg))
 
             conn.send(f"{planex},{planey},{shoot}".encode(Globals.FORMAT))
@@ -105,6 +106,8 @@ def start():
     #遊戲迴圈
     running = True
     while running:
+        shoot = 'FALSE'
+        beHit = "FALSE"
         clock.tick(Globals.FPS)  #一秒內最多的執行次數
 
         #取得輸入
@@ -119,7 +122,7 @@ def start():
                     player_bullets.add(player_bullet)
 
         pos = pygame.mouse.get_pos()
-        print("severPos:",pos[0], pos[1])
+        # print("severPos:",pos[0], pos[1])
         #更新遊戲
         if(pos[0] != 0 or pos[1] != 0):
             player.update(pos[0], pos[1])
@@ -129,6 +132,7 @@ def start():
 
         #判斷對手發射子彈
         if clientShoot == 'TRUE':
+            print("client shoot!")
             enemy_bullet = bullet.Bullet(cx, cy, 10)
             enemy_bullets.add(enemy_bullet)
             all_sprites.add(enemy_bullet)
@@ -138,6 +142,14 @@ def start():
         player_bullets.update()
         enemy_bullets.update()
 
+        #判斷子彈跟玩家碰撞
+        player_hits = pygame.sprite.spritecollide(player, enemy_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
+        if player_hits:
+            print("server plane be hit.")
+            beHit = "TRUE"
+            expl = Explosion.Explosion(planex, planey)
+            all_sprites.add(expl)
+        
         #背景移動
         x0 -= 0.7
         x1 -= 0.7
@@ -152,10 +164,10 @@ def start():
         write_text(screen,"serverIP:" + str(Globals.serverIP), 22, 50, 60)
         write_text(screen,"key:" + str(shoot), 22, 50, 80)
         write_text(screen,"clientKey:" + str(clientShoot), 22, 50, 100)
+        write_text(screen,"BeHit:" + str(beHit), 22, 50, 120)
         
         pygame.display.flip()
         pygame.display.update()
-        shoot = 'FALSE'
         sleep(0.001)
         
     pygame.quit()

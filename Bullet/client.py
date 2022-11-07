@@ -59,7 +59,7 @@ def send(msg):
     servermsg = client.recv(Globals.HEADER).decode(Globals.FORMAT)
 
     newMsg = servermsg.split(',')
-    print("Serverpos:" , newMsg)
+    # print("Serverpos:" , newMsg)
     # print("type", type(newMsg))
     
     sx = int(newMsg[0])
@@ -76,6 +76,8 @@ def gmaeRun():
     #遊戲迴圈
     run = True
     while run:
+        shoot = 'FALSE'
+        beHit = "FALSE"
         clock.tick(Globals.FPS)  #一秒內最多的執行次數
 
         #取得輸入
@@ -90,7 +92,7 @@ def gmaeRun():
                     player_bullets.add(player_bullet)
                     
         pos = pygame.mouse.get_pos()
-        print("clientPos:",pos[0], pos[1])
+        # print("clientPos:",pos[0], pos[1])
         #更新遊戲
         if(pos[0] != 0 or pos[1] != 0):
             player.update(pos[0], pos[1])
@@ -100,6 +102,7 @@ def gmaeRun():
         
         #判斷對手發射子彈
         if serverShoot == 'TRUE':
+            print("server shoot!")
             enemy_bullet = bullet.Bullet(sx, sy, -10)
             enemy_bullets.add(enemy_bullet)
             all_sprites.add(enemy_bullet)
@@ -108,6 +111,15 @@ def gmaeRun():
         planey = player.rect.centery
         player_bullets.update()
         enemy_bullets.update()
+
+        #判斷子彈跟玩家碰撞
+        player_hits = pygame.sprite.spritecollide(player, enemy_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
+        if player_hits:
+            print("client plane be hit.")
+            beHit = "TRUE"
+            # expl = Explosion.Explosion(cx, cy)
+            # all_sprites.add(expl)
+            
 
         #背景移動
         x0 -= 0.7
@@ -123,11 +135,11 @@ def gmaeRun():
         write_text(screen,"serverIP:" + str(Tk_window.serverIP), 22, 50, 60)
         write_text(screen,"ServerKey:" + str(serverShoot), 22, 50, 80)
         write_text(screen,"key:" + str(shoot), 22, 50, 100)
+        write_text(screen,"BeHit:" + str(beHit), 22, 50, 120)
         
         pygame.display.flip()
         pygame.display.update()
         send(f"{planex},{planey},{shoot}") #遊戲內持續傳送
-        shoot = 'FALSE'
         sleep(0.001)
 
     pygame.quit()
