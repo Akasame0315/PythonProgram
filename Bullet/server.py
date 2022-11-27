@@ -65,21 +65,18 @@ def handle_client(conn, addr):
         if msg_length:
             msg_length = int(msg_length)
             msg = conn.recv(msg_length).decode(Globals.FORMAT)
+            print("msg:", msg)
             if msg == DISCONNECT_MESSAGE:
                 connected = False
                 print("client unconnect.")
 
             else:
                 newMsg = msg.split(',')
-                # print("Clientpos:" , newMsg)
-                # print("type", type(newMsg))
+                cx = int(newMsg[0])
+                cy = int(newMsg[1])
+                clientShoot = newMsg[2]
 
-            conn.send(f"{planex},{planey},{shoot}".encode(Globals.FORMAT))
-            cx = int(newMsg[0])
-            cy = int(newMsg[1])
-            clientShoot = newMsg[2]
-
-        # sleep(0.005) #0.01傳送一次
+            # conn.send(f"{planex},{planey},{shoot}".encode(Globals.FORMAT))
     
     conn.close()
 
@@ -87,6 +84,10 @@ def start():
     global cx, cy #clientPos
     global x0, y0, x1, y1 #背景初始位置
     global shoot, clientShoot #射擊判定
+
+    shoot = "FALSE"
+    beHit = "FALSE"
+    clientBeHit = "FALSE"
     
     server.listen()
     print(f"[LISTENING] Server is listening on {Globals.PORT}")
@@ -102,12 +103,13 @@ def start():
     thread = threading.Thread(target=handle_client, args=(conn, addr))
     thread.start()
     # print(f"[ACTIVE CONNECTIONS] {threading.activeCount() - 1}")
-
+    
     #遊戲迴圈
     running = True
     while running:
-        shoot = 'FALSE'
         beHit = "FALSE"
+        clientBeHit = "FALSE"
+        shoot = "FALSE"
         clock.tick(Globals.FPS)  #一秒內最多的執行次數
 
         #取得輸入
@@ -136,6 +138,7 @@ def start():
             enemy_bullet = bullet.Bullet(cx, cy, 10)
             enemy_bullets.add(enemy_bullet)
             all_sprites.add(enemy_bullet)
+            clientShoot = "FALSE"
 
         planex = player.rect.centerx
         planey = player.rect.centery
@@ -147,8 +150,13 @@ def start():
         if player_hits:
             print("server plane be hit.")
             beHit = "TRUE"
-            expl = Explosion.Explosion(planex, planey)
-            all_sprites.add(expl)
+            # expl = Explosion.Explosion(planex, planey)
+            # all_sprites.add(expl)
+
+        enemy_hits = pygame.sprite.spritecollide(enemy, player_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
+        if enemy_hits:
+            print("client plane be hit.")
+            clientBeHit = "TRUE"
         
         #背景移動
         x0 -= 0.7
@@ -163,11 +171,12 @@ def start():
         write_text(screen,"ClientPosX:" + str(cx) + " ClientPosY:" + str(cy), 22, 50, 40)
         write_text(screen,"serverIP:" + str(Globals.serverIP), 22, 50, 60)
         write_text(screen,"key:" + str(shoot), 22, 50, 80)
-        write_text(screen,"clientKey:" + str(clientShoot), 22, 50, 100)
         write_text(screen,"BeHit:" + str(beHit), 22, 50, 120)
+        write_text(screen,"clientBeHit:" + str(clientBeHit), 22, 50, 140)
         
         pygame.display.flip()
         pygame.display.update()
+        conn.send(f"{planex},{planey},{shoot}".encode(Globals.FORMAT))
         sleep(0.001)
         
     pygame.quit()

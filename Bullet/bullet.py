@@ -19,3 +19,5 @@ class Bullet(pygame.sprite.Sprite):
         #如果子彈超出螢幕視窗，就把該子彈刪掉
         if self.rect.bottom < 0:
             self.kill()
+        elif self.rect.top > Globals.HEIGHT:
+            self.kill()

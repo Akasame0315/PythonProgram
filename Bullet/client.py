@@ -57,11 +57,9 @@ def send(msg):
     client.send(send_length)
     client.send(message)
     servermsg = client.recv(Globals.HEADER).decode(Globals.FORMAT)
-
-    newMsg = servermsg.split(',')
-    # print("Serverpos:" , newMsg)
-    # print("type", type(newMsg))
+    print("servermsg:", servermsg)
     
+    newMsg = servermsg.split(',')
     sx = int(newMsg[0])
     sy = int(newMsg[1])
     serverShoot = newMsg[2]
@@ -71,13 +69,14 @@ def gmaeRun():
     global x0, x1, y0, y1 #背景初始位置
     global shoot, serverShoot #射擊判定
 
-    send(f"250,70,{shoot}") #遊戲前傳送一次座標(預設位置)
+    send("250,70,FALSE") #遊戲前傳送一次座標(預設位置)
     
     #遊戲迴圈
     run = True
     while run:
-        shoot = 'FALSE'
+        shoot = "FALSE"
         beHit = "FALSE"
+        serverBeHit = "FALSE"
         clock.tick(Globals.FPS)  #一秒內最多的執行次數
 
         #取得輸入
@@ -106,6 +105,7 @@ def gmaeRun():
             enemy_bullet = bullet.Bullet(sx, sy, -10)
             enemy_bullets.add(enemy_bullet)
             all_sprites.add(enemy_bullet)
+            serverShoot = "FALSE"
         
         planex = player.rect.centerx
         planey = player.rect.centery
@@ -119,7 +119,10 @@ def gmaeRun():
             beHit = "TRUE"
             # expl = Explosion.Explosion(cx, cy)
             # all_sprites.add(expl)
-            
+        enemy_hits = pygame.sprite.spritecollide(enemy, player_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
+        if enemy_hits:
+            print("server plane be hit.")
+            serverBeHit = "TRUE"
 
         #背景移動
         x0 -= 0.7
@@ -133,9 +136,9 @@ def gmaeRun():
         write_text(screen, "mx: " + str(planex) + " my: " + str(planey), 22, 50, 20)
         write_text(screen, "serverPosX: " + str(sx) + " serverPosY: " + str(sy), 22, 50, 40)
         write_text(screen,"serverIP:" + str(Tk_window.serverIP), 22, 50, 60)
-        write_text(screen,"ServerKey:" + str(serverShoot), 22, 50, 80)
         write_text(screen,"key:" + str(shoot), 22, 50, 100)
         write_text(screen,"BeHit:" + str(beHit), 22, 50, 120)
+        write_text(screen,"serverBeHit:" + str(serverBeHit), 22, 50, 140)
         
         pygame.display.flip()
         pygame.display.update()
