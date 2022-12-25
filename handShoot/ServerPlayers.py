@@ -1,6 +1,7 @@
 from time import sleep
 import pygame
 import Globals
+import handIdentify
 
 Globals.initial()
 # originx = Globals.ServerX
@@ -20,37 +21,37 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.circle(self.image, Globals.WHITE, self.rect.center, self.radius)    #畫出圓形
         self.speed = 7                         #圖片移動速度
 
-    def update(self):
-        # global originx
-        self.image = pygame.transform.scale(Globals.plane04_img, (Globals.planesize_large)) #調整圖片大小
-        self.image.set_colorkey(Globals.BLACK)    #圖片去背
-        self.rect = self.image.get_rect()       #圖片定位(外框)
-        # self.rect.centerx = x
-        # if direction == "UP":   self.rect.centery -= self.speed
-        # elif direction == "DOWN":   self.rect.centery += self.speed
-            
-        # 防止飛船超出視窗
-        if self.rect.centerx < 0:
-            self.rect.centerx = 0.1
-        if self.rect.centerx >= Globals.WIDTH:
-            self.rect.centerx = Globals.WIDTH
-        if self.rect.centery < 0:
-            self.rect.centery = 0.1
-        if self.rect.centery >= Globals.WIDTH:
-            self.rect.centery = Globals.WIDTH
+    # def update(self, x, y):
+    #     # global originx
+    #     self.image = pygame.transform.scale(Globals.plane04_img, (Globals.planesize_large)) #調整圖片大小
+    #     self.image.set_colorkey(Globals.BLACK)    #圖片去背
+    #     self.rect = self.image.get_rect()       #圖片定位(外框)
+    #     self.rect.centerx = x
+    #     self.rect.centery = y
 
 
-    def animate(self, positionx, positiony, move):
-        if move > 0:
+    def animate(self, move):
+        if move-self.rect.centerx > 0:
             self.image = pygame.transform.scale(Globals.plane04R_img, (Globals.planesize_large)) #調整圖片大小
             
-        elif move < 0:
+        elif move-self.rect.centerx < 0:
             self.image = pygame.transform.scale(Globals.plan04L_img, (Globals.planesize_large)) #調整圖片大小
+        else:   self.image = pygame.transform.scale(Globals.plane04_img, (Globals.planesize_large)) #調整圖片大小
         
         self.image.set_colorkey(Globals.BLACK)    #圖片去背
         self.rect = self.image.get_rect()       #圖片定位(外框)
-        self.rect.centerx = positionx
-        self.rect.centery = positiony
+        self.rect.centerx = handIdentify.RPos[0]
+        self.rect.centery = handIdentify.RPos[1]
+
+        # 防止飛船超出視窗
+        if self.rect.centerx < 0:
+            self.rect.centerx = 0.1
+        if self.rect.bottom >= Globals.WIDTH:
+            self.rect.bottom = Globals.WIDTH
+        if self.rect.top < Globals.lineRect:
+            self.rect.top = Globals.lineRect
+        if self.rect.centery >= Globals.WIDTH:
+            self.rect.centery = Globals.WIDTH
             
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):

@@ -3,6 +3,9 @@ import pygame
 import os
 import socket
 
+#辨識
+cameraNum = 0
+
 def initial():
     #連線參數
     global HEADER, PORT, SERVER, ADDR, FORMAT, serverIP
@@ -14,7 +17,7 @@ def initial():
     serverIP = socket.gethostbyname(socket.gethostname())
     
     #遊戲參數
-    global FPS, WIDTH, HEIGHT, WHITE, BLACK, RED, YELLOW, planesize_middle, planesize_large, screen
+    global FPS, WIDTH, HEIGHT, WHITE, BLACK, RED, YELLOW, ROSE, planesize_middle, planesize_large, screen, controlMode
     FPS = 60 
     WIDTH = 1280
     HEIGHT = 800
@@ -22,16 +25,24 @@ def initial():
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
     YELLOW = (255, 255, 0)
+    ROSE = (255,248,220)
     planesize_middle = (200, 150)
     planesize_large = (250, 150)
+    controlMode = 3
+
+    global lineRect
+    lineRect = HEIGHT/2
 
     #遊戲初始化
     pygame.init()
     screen = pygame.display.set_mode((WIDTH, HEIGHT))   #設定視窗大小
 
     #背景
-    global background_img
+    global background_img, tutorial_img, tutorial2_img, tutorial3_img
     background_img = pygame.image.load(os.path.join("image", "background04(no cir).png")).convert()
+    tutorial_img = pygame.image.load(os.path.join("image", "tutorial.png")).convert()
+    tutorial2_img = pygame.image.load(os.path.join("image", "tutorial2.png")).convert()
+    tutorial3_img = pygame.image.load(os.path.join("image", "tutorial3.png")).convert()
     #loading畫面
     global loading_img 
     loading_img = pygame.image.load(os.path.join("image", "loading.jpg")).convert()
@@ -46,7 +57,8 @@ def initial():
     global font_2, font_name, fontSize
     fontSize = 70
     font_2 = pygame.font.Font('Azurite.ttf', fontSize)
-    font_name = pygame.font.match_font('arial')
+    font_name = pygame.font.match_font('SimHei')
+    # font_name = pygame.font.SysFont('SimHei',32)
 
     #飛機圖片
     global plane03_img, plan03L_img, plane03R_img, plane04_img, plan04L_img, plane04R_img
@@ -76,37 +88,3 @@ def initial():
             expl_anim_lg.append(pygame.transform.scale(expl_img, (75, 75)))
             expl_anim_sm.append(pygame.transform.scale(expl_img, (40, 40)))
 
-# def getHit(player, enemy_bullets):
-    
-#     player_hits = pygame.sprite.spritecollide(player, enemy_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
-
-#     if player_hits: print("now is hitting")
-    # for i in range(enemy_number):
-    #     if i == 0:
-    #         enemy_hits = pygame.sprite.spritecollide(enemy[i], player_bullets, True, pygame.sprite.collide_circle)
-    #     else: enemy_hits += pygame.sprite.spritecollide(enemy[i], player_bullets, True, pygame.sprite.collide_circle)
-
-    # IsBreak = False
-    # if score[0] == 0 or (score[1] == 0 and score[2] == 0 and score[3] == 0):
-    #     IsBreak = True
-
-    ## 分數
-    # for hit in player_hits:
-    #     if IsBreak: break
-    #     score[0] -= deduction
-    #     expl = Explosion(hit.rect.center, 'sm')
-    #     all_sprites.add(expl)
-    # if enemy_is_exist[0]: 
-    #     enemy0_hits = pygame.sprite.spritecollide(enemy[0], player_bullets, True, pygame.sprite.collide_circle)
-    #     for hit in enemy0_hits:
-    #         if IsBreak: break
-    #         score[1] -= deduction
-    #         expl = Explosion(hit.rect.center, 'sm')
-    #         all_sprites.add(expl)
-
-    # # 使分數不小於 0
-    # for i in range(enemy_number + 1):
-    #     if score[i] <= 0:
-    #         score[i] = 0
-
-    # return score

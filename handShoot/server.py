@@ -12,15 +12,16 @@ import threading
 from threading import Timer
 from ServerPlayers import Player
 from ServerPlayers import Enemy
-from PrintOnScreen import write_text
+from PrintOnScreen import write_text, center_line
 import Globals
 import bullet
 import Explosion
 import handIdentify
-import autopy
+import os
 # endregion
 
 Globals.initial()
+Globals.cameraNum = 0
 # region 參數
 DISCONNECT_MESSAGE = "!DISCONNECT"
 Globals.serverIP = Globals.SERVER
@@ -28,11 +29,10 @@ shoot = "FALSE"
 clientShoot = "FALSE"
 leftHandText = "none"
 rightHandText = "none"
-LHSign = "none"
-RHSign = "none"
-planex, planey = Globals.WIDTH/2, 850
-ready = False
+planex, planey = int(Globals.WIDTH/2), 700
+# ready = False
 connected = True
+move = 0
 #endregion
 
 clock = pygame.time.Clock() #管理遊戲的時間
@@ -52,7 +52,7 @@ cx, cy = 0, 0
 
 # region sprite群組 可以放進sprite的物件
 all_sprites = pygame.sprite.Group()
-player = Player(Globals.WIDTH/2, 850)
+player = Player(planex, planey)
 player_bullets = pygame.sprite.Group()
 enemy = Enemy(cx, cy)
 enemy_bullets = pygame.sprite.Group()
@@ -91,10 +91,10 @@ def handle_client(conn, addr):
 
 def start():
     global cx, cy #clientPos
-    global x0, y0, x1, y1, planex, planey, ready
+    global x0, y0, x1, y1,planex, planey
     global shoot, clientShoot #射擊判定
-    global leftHandText, rightHandText, LHSign, RHSign #手勢辨識結果
-    global connected
+    global leftHandText, rightHandText #手勢辨識結果
+    global connected, move
     
     threads = []    #執行緒陣列(多個子執行緒)
 
@@ -107,8 +107,8 @@ def start():
     
     #等待連線畫面
     screen.blit(pygame.transform.scale(Globals.loading_img, (Globals.WIDTH, Globals.HEIGHT)), (x0, y0))
-    write_text(screen,"WAITTING FOR CONNECT...", 100, 70, 600, Globals.YELLOW, TRUE)
-    write_text(screen,"YOUR ROOM ADDRESS IS: " + f"[{Globals.serverIP}]", 70, 70, Globals.HEIGHT-150, Globals.RED, TRUE)
+    write_text(screen,"WAITTING FOR CONNECT...", 100, 70, 600, Globals.YELLOW, True)
+    write_text(screen,"YOUR ROOM ADDRESS IS: " + f"[{Globals.serverIP}]", 70, 70, Globals.HEIGHT-150, Globals.RED, True)
     pygame.display.flip()
     pygame.display.update()
     
@@ -138,14 +138,16 @@ def start():
         clock.tick(Globals.FPS)  #一秒內最多的執行次數
         pos = pygame.mouse.get_pos()    #滑鼠位置
         time = pygame.time.get_ticks()
+        RPos = handIdentify.RPos
         # autopy.mouse.move(handIdentify.RPos[0] , handIdentify.RPos[1]) # 平滑移动鼠标
         # print("severPos:",pos[0], pos[1])
+        print("RPos:", RPos)
 
         #更新遊戲
         print(f"serverLeftHand:{leftHandText}, serverRightHand:{rightHandText}")
-        print(f"LHSign:{LHSign}, RHSigh:{RHSign}, READY:{ready}")
-        if(leftHandText == "0" and rightHandText == "0"):   #雙手握拳才開始偵測移動
-            ready = True
+        print(f"LHSign:{LHSign}, RHSigh:{RHSign}")
+        # if(leftHandText == "0" and rightHandText == "0"):   #雙手握拳才開始偵測移動
+        #     ready = True
 
         # 取得輸入
         for event in pygame.event.get():
@@ -153,24 +155,25 @@ def start():
                 running = False
             # if event.type == pygame.KEYDOWN:    #判斷鍵盤按鍵
                 # if event.key == pygame.K_SPACE: #按下空白鍵發射子彈
-        if rightHandText == "7" and time%6 == 0:
+        if leftHandText == "7" and time%5 == 0:
             shoot = 'TRUE'
             player_bullet = bullet.Bullet(planex, planey, -10)
             all_sprites.add(player_bullet)
             player_bullets.add(player_bullet)
-
-        if ready and rightHandText == '5':
-            planex = pos[0]
-            planey = pos[1]
-            player.update()
-            player.animate(planex, planey, pygame.mouse.get_rel()[0])
+           
         # if(pos[0] != 0 or pos[1] != 0):
         #     player.update(pos[0], pos[1])
         #     player.animate(pygame.mouse.get_rel()[0])
-        # planex = player.rect.centerx
-        # planey = player.rect.centery
+        # if ready:
+        # player.update(handIdentify.RPos[0], handIdentify.RPos[1])
+        # player.update(pos[0], pos[1])
+        # player.animate(pygame.mouse.get_rel()[0])
+        player.animate(handIdentify.RPos[0])
         enemy.update(cx, cy)
         enemy.animate(cx, cy) 
+
+        planex = player.rect.centerx
+        planey = player.rect.centery
 
         #判斷對手發射子彈
         if clientShoot == 'TRUE':
@@ -192,6 +195,7 @@ def start():
             beHit = "TRUE"
             all_sprites.remove(enemy_bullet)
             enemy_bullet.kill()
+            move += 10
             # expl = Explosion.Explosion((planex, planey), "lg")
             # all_sprites.add(expl)
             # expl.update()
@@ -205,14 +209,15 @@ def start():
             clientBeHit = "TRUE"
             all_sprites.remove(player_bullet)
             player_bullet.kill()
+            move -= 10
         
         #背景移動
         x0 -= 0.7
         x1 -= 0.7
-        screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x0, y0))
-        screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x1, y1))
-        if x0 < -1600:    x0 = 1600
-        if x1 < -1600:    x1 = 1600
+        screen.blit(pygame.transform.scale(background_img, (1280, 800)), (x0, y0))
+        screen.blit(pygame.transform.scale(background_img, (1280, 800)), (x1, y1))
+        if x0 < -1280:    x0 = 1280
+        if x1 < -1280:    x1 = 1280
 
         all_sprites.draw(screen)    #把sprites的東西都畫到screen上
         # leftHandText = handIdentify.Ltext
@@ -220,8 +225,8 @@ def start():
         # LHSign = handIdentify.LSign
         # RHSign = handIdentify.RSign
         
-        if ready == False:
-            write_text(screen,"clenched hands TO BE READY", 50, 50, Globals.HEIGHT/2, Globals.YELLOW, TRUE)
+        # if ready == False:
+        #     write_text(screen,"clenched hands TO BE READY", 50, 50, Globals.HEIGHT/2, Globals.YELLOW, True)
         write_text(screen, "mx:" + str(planex) + " my:" + str(planey), 22, 50, 20)
         write_text(screen, "ClientPosX:" + str(cx) + " ClientPosY:" + str(cy), 22, 50, 40)
         write_text(screen, "serverIP:" + str(Globals.serverIP), 22, 50, 60)
@@ -229,16 +234,26 @@ def start():
         write_text(screen, "BeHit:" + str(beHit), 22, 50, 120)
         write_text(screen, "clientBeHit:" + str(clientBeHit), 22, 50, 140)
         write_text(screen, f"handsText:{leftHandText},{rightHandText}", 22, 50, 160)
-        write_text(screen, f"handsSign:{LHSign},{RHSign}", 22, 50, 180)
-        write_text(screen, f"ready:{ready} {time} {int(time)}", 22, 50, 200)
+        # write_text(screen, f"handsSign:{LHSign},{RHSign}", 22, 50, 180)
+        write_text(screen, f"line: {Globals.lineRect}", 22, 50, 200)
+        # write_text(screen, f"準備:{ready} {time} {int(time)}", 22, 50, 200)
         write_text(screen, f"RPos {handIdentify.RPos} LPos {handIdentify.LPos}", 22, 50, 220)
+        center_line(screen, move)
         
         pygame.display.flip()
         pygame.display.update()
         conn.send(f"{planex},{planey},{shoot}".encode(Globals.FORMAT))
         sleep(0.001)
-        
+
+        if Globals.lineRect <= 140 or Globals.lineRect >= 660:
+            running = False
+            screen.blit(pygame.transform.scale(Globals.tutorial_img, (1280, 800)), (0, 0))
+            pygame.display.flip()
+            pygame.display.update()
+            sleep(5)
+
     pygame.quit()
+    os.system(".\start.py")
         
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.bind(Globals.ADDR)

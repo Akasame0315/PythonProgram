@@ -9,18 +9,22 @@ from turtle import left
 import pygame
 from ClientPlayers import Player
 from ClientPlayers import Enemy
-from PrintOnScreen import write_text
+from PrintOnScreen import write_text, center_line
 import Globals
 import Tk_window
 import bullet
-# import handIdentify
+import os
 #endregion
 
 Globals.initial()
+Globals.cameraNum = 1
+import handIdentify
+
 #region 連線參數
 DISCONNECT_MESSAGE = "!DISCONNECT"
 shoot = "FALSE"
 serverShoot = "FALSE"
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 # endregion
 
 clock = pygame.time.Clock() #管理遊戲的時間
@@ -35,13 +39,14 @@ background02_img = Globals.background_img
 background_size = background_img.get_size()
 background_rect = background_img.get_rect()
 x0, y0 = 0, 0   #背景1初始位置
-x1, y1 = 1600, 0  #背景2初始位置
+x1, y1 = 1280, 0  #背景2初始位置
 sx, sy = 0, 0
 ready = False
 leftHandText = "none"
 rightHandText = "none"
 LHSign = "none"
 RHSign = "none"
+move = 0
 # endregion
 
 #region sprite群組 可以放進sprite的物件
@@ -72,21 +77,20 @@ def send(msg):
     serverShoot = newMsg[2]
     
 def gmaeRun():
+    print(client.recv(Globals.HEADER).decode(Globals.FORMAT))
+
     global sx, sy  #serverPos
     global x0, x1, y0, y1 #背景初始位置
     global shoot, serverShoot #射擊判定
     global RHSign, LHSign, rightHandText, leftHandText, ready
+    global move
 
     # send("250,70,FALSE") #遊戲前傳送一次座標(預設位置)
     planex = 250
     planey = 70
-    
-    clientConn = threading.Thread(target=send, args=(f"{planex},{planey},{shoot}"))
-    # handsIdentify = threading.Thread(target=handIdentify.handIdentify)  #手勢辨識執行緒(未完成)
-    # mouse = threading.Thread(target=handIdentify.mouse)
-    clientConn.start()
-    # mouse.start()
-    # handsIdentify.start()
+
+    handID = threading.Thread(target=handIdentify.handIdentify)
+    handID.start()
 
     #遊戲迴圈
     run = True
@@ -106,26 +110,29 @@ def gmaeRun():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:   #關閉視窗
                 run = False
-            if event.type == pygame.KEYDOWN:    #判斷鍵盤按鍵
-                if event.key == pygame.K_SPACE: #按下空白鍵發射子彈
-                    shoot = 'TRUE'
-                    player_bullet = bullet.Bullet(planex, planey, 10)
-                    all_sprites.add(player_bullet)
-                    player_bullets.add(player_bullet)
-        # if ready and rightHandText == '0':
-        #     planex = pos[0]
-        #     planey = pos[1]
-        #     player.update(RHSign)
-        #     player.animate(planex, planey, pygame.mouse.get_rel()[0])
-
-        pos = pygame.mouse.get_pos()
+            # if event.type == pygame.KEYDOWN:    #判斷鍵盤按鍵
+            #     if event.key == pygame.K_SPACE: #按下空白鍵發射子彈
+            #         shoot = 'TRUE'
+            #         player_bullet = bullet.Bullet(planex, planey, 10)
+            #         all_sprites.add(player_bullet)
+            #         player_bullets.add(player_bullet)
+        if leftHandText == "7" and time%5 == 0:
+            shoot = 'TRUE'
+            player_bullet = bullet.Bullet(planex, planey, 10)
+            all_sprites.add(player_bullet)
+            player_bullets.add(player_bullet)
+        # pos = pygame.mouse.get_pos()
         # print("clientPos:",pos[0], pos[1])
         #更新遊戲
-        if(pos[0] != 0 or pos[1] != 0):
-            player.update(pos[0], pos[1])
-            player.animate(pygame.mouse.get_rel()[0])
+        # if(pos[0] != 0 or pos[1] != 0):
+        #     player.update(pos[0], pos[1])
+        #     player.animate(pygame.mouse.get_rel()[0])
+        player.animate(handIdentify.RPos[0])
         enemy.update(sx, sy)
         enemy.animate(sx, sy)
+
+        planex = player.rect.centerx
+        planey = player.rect.centery
         
         #判斷對手發射子彈
         if serverShoot == 'TRUE':
@@ -135,8 +142,6 @@ def gmaeRun():
             all_sprites.add(enemy_bullet)
             serverShoot = "FALSE"
         
-        # planex = player.rect.centerx
-        # planey = player.rect.centery
         player_bullets.update()
         enemy_bullets.update()
 
@@ -147,6 +152,7 @@ def gmaeRun():
             beHit = "TRUE"
             all_sprites.remove(enemy_bullet)
             enemy_bullet.kill()
+            move -= 10
             # expl = Explosion.Explosion(cx, cy)
             # all_sprites.add(expl)
         enemy_hits = pygame.sprite.spritecollide(enemy, player_bullets, False, pygame.sprite.collide_circle)  # False：不要刪掉 player
@@ -155,14 +161,15 @@ def gmaeRun():
             serverBeHit = "TRUE"
             all_sprites.remove(player_bullet)
             player_bullet.kill()
+            move += 10
 
         #背景移動
         x0 -= 0.7
         x1 -= 0.7
-        screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x0, y0))
-        screen.blit(pygame.transform.scale(background_img, (1600, 900)), (x1, y1))
-        if x0 < -1600:    x0 = 1600
-        if x1 < -1600:    x1 = 1600
+        screen.blit(pygame.transform.scale(background_img, (1280, 800)), (x0, y0))
+        screen.blit(pygame.transform.scale(background_img, (1280, 800)), (x1, y1))
+        if x0 < -1280:    x0 = 1280
+        if x1 < -1280:    x1 = 1280
 
         all_sprites.draw(screen)    #把sprites的東西都畫到screen上
         
@@ -174,16 +181,28 @@ def gmaeRun():
         write_text(screen,"key:" + str(shoot), 22, 50, 100)
         write_text(screen,"BeHit:" + str(beHit), 22, 50, 120)
         write_text(screen,"serverBeHit:" + str(serverBeHit), 22, 50, 140)
+        write_text(screen, f"RPos {handIdentify.RPos} LPos {handIdentify.LPos}", 22, 50, 160)
+        write_text(screen, f"line: {Globals.lineRect}", 22, 50, 200)
+        center_line(screen, move)
         
         pygame.display.flip()
         pygame.display.update()
-        # send(f"{planex},{planey},{shoot}") #遊戲內持續傳送
+        send(f"{planex},{planey},{shoot}") #遊戲內持續傳送
         sleep(0.001)
+
+        if Globals.lineRect <= 140 or Globals.lineRect >= 660:
+            run = False
+            screen.blit(pygame.transform.scale(Globals.tutorial_img, (1280, 800)), (0, 0))
+            pygame.display.flip()
+            pygame.display.update()
+            sleep(5)
 
     pygame.quit()
     send("!DISCONNECT")
+    os.system(".\start.py")
 
 #IP setting
+# try:
 Tk_window.TK_connect()
 if Tk_window.serverIP != "":
     SERVER = Tk_window.serverIP
@@ -194,5 +213,8 @@ else:
 
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 client.connect(ADDR)
-print(client.recv(Globals.HEADER).decode(Globals.FORMAT))
 gmaeRun()
+# finally:
+#     print("連線失敗，請確認輸入的IP位置是否正確!")
+#     pygame.quit()
+    # os.system(".\start.py")
